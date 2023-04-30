@@ -5,13 +5,13 @@ use PDO;
 use PDOException;
 
 /*
-    PHPTreePDO is a lightweight php/SQL class 
-    require PHP PDO to be installed and enabled 
-    more info about PDO : https://www.php.net/manual/en/book.pdo.php
+	PHPTreePDO is a lightweight php/SQL class 
+	require PHP PDO to be installed and enabled 
+	more info about PDO : https://www.php.net/manual/en/book.pdo.php
   
-    How to use ? 
+	How to use ? 
   
-    simply just set name space "use system\lib\PTreePDO as DB;" and start using PHPTreePDO as DB
+	simply just set name space "use PHPTree\DB\PHPTreePDO as DB;" and start using PHPTreePDO as DB
  
 	Example : 
 	 
@@ -21,24 +21,23 @@ use PDOException;
 	 //establish a connection with database , now you can use $db to retrieve and insert data.
 	 $db =	new DB( array('host' => 'mysql:host=localhost;dbname=phptree' , 'username' => 'root' , 'password' => 'root') );
 	 
-    Errors and logs :
+	Errors and logs :
   
-    You can track and debug SQL errors by printing out the recorded errors 
-    for example : echo "<pre>"; print_r(PTreePDO::$errors);
-    or you can set a text file to trace all errors without printing them out .
-    if you are using PHPTree project you can set the file like this : 
-    DB::$debug_file = DIR . "/var/logs/sql.text";
+	You can track and debug SQL errors by printing out the recorded errors 
+	for example : echo "<pre>"; print_r(PTreePDO::$errors);
+	or you can set a text file to trace all errors without printing them out .
+	if you are using PHPTree project you can set the file like this : 
+	DB::$debug_file = DIR . "/var/logs/sql.text";
   
  */
-class PTreePDO {
+class PHPTreePDO {
 	
 	//current active connection PDO class
-    public $pdo = null;
+	public $pdo = null;
 	  
 	//Debug File
 	public static $debug_file = null;
-	
-	
+	public $is_connected = false;
 	public static $errors = array();
 	/**
 	 *  Establish database connection.
@@ -51,11 +50,14 @@ class PTreePDO {
 		
 		try{
 				$this->pdo = new PDO( $database['host'], 
-							 		  $database['username'], 
-							 		  $database['password'],
-							 		( !isset($database['options']) ? array( PDO::MYSQL_ATTR_INIT_COMMAND => 'SET NAMES \'utf8mb4\'',
-								    										PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION ) : $database['options'] )
-						 			);
+									   $database['username'], 
+									   $database['password'],
+									 ( !isset($database['options']) ? array( PDO::MYSQL_ATTR_INIT_COMMAND => 'SET NAMES \'utf8mb4\'',
+																			PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION ) : $database['options'] )
+									 );
+									 
+				$this->is_connected = true;
+				 
 		} catch (PDOException $e) {
 			PTreePDO::$errors[] = $e->getMessage();
 			return null;
@@ -73,28 +75,28 @@ class PTreePDO {
 	private function writeLogs(){
 		
 		//Log errors to file has been disabled 
-		if ( PTreePDO::$debug_file == null || PTreePDO::$debug_file == "" || PTreePDO::$debug_file == false  )
+		if ( PHPTreePDO::$debug_file == null || PHPTreePDO::$debug_file == "" || PHPTreePDO::$debug_file == false  )
 		{
 			return;
 		}
 		
 		//No errors to log!
-		if ( sizeof( PTreePDO::$errors ) == 0 )
+		if ( sizeof( PHPTreePDO::$errors ) == 0 )
 		{
 			return;
 		}
 		
 		$string = "";
 		
-		foreach( PTreePDO::$errors AS $log )
+		foreach( PHPTreePDO::$errors AS $log )
 		{
-			$string .= $log . "\n";
-			$string .= "----------------------------------------------------------------";
+			$string .= $log;
+			$string .= "\n----------------------------------------------------------------\n";
 		}
 		
-		file_put_contents(PTreePDO::$debug_file, $string.PHP_EOL , FILE_APPEND | LOCK_EX);
+		file_put_contents(PHPTreePDO::$debug_file, $string.PHP_EOL , FILE_APPEND | LOCK_EX);
 		
-		PTreePDO::$errors = array();
+		PHPTreePDO::$errors = array();
 			
 		unset($string);
 	}
@@ -106,8 +108,16 @@ class PTreePDO {
 		  example of $params : array( array(':username' , 'Jack' , \PDO::PARAM_STR ) )
 	 */
 	public function prepare( $query , $params = array()  ) : \PDOStatement|false {
-			 
+			
+		//Database is not connected!
+		if ( !$this->is_connected )
+		{
+			PHPTreePDO::$errors[] = "\nAttempt a query when database is not connected! -> $query";
+			return false;
+		} 
+		
 		try{
+			
 			$prepare = $this->pdo->prepare($query);
 		 
 			 if ( isset($params) AND sizeof($params) > 0 )
@@ -126,7 +136,7 @@ class PTreePDO {
 			return $prepare;
 		 
 		}catch (PDOException $e) {
-			PTreePDO::$errors[] = $e->getMessage();
+			PHPTreePDO::$errors[] = $e->getMessage();
 			return false;
 		}	 
 	}
@@ -153,7 +163,7 @@ class PTreePDO {
 			  }
 		
 		}catch (PDOException $e) {
-			PTreePDO::$errors[] = $e->getMessage();
+			PHPTreePDO::$errors[] = $e->getMessage();
 			return false;
 		}	 
 	}
@@ -189,7 +199,7 @@ class PTreePDO {
 			}
 		
 		}catch (PDOException $e) {
-			PTreePDO::$errors[] = $e->getMessage();
+			PHPTreePDO::$errors[] = $e->getMessage();
 			return 0;
 		}	 
 	}
@@ -215,7 +225,7 @@ class PTreePDO {
 			}
 		
 		}catch (PDOException $e) {
-			PTreePDO::$errors[] = $e->getMessage();
+			PHPTreePDO::$errors[] = $e->getMessage();
 			return false;
 		}	 
 	}
@@ -241,7 +251,7 @@ class PTreePDO {
 			}
 		
 		}catch (PDOException $e) {
-			PTreePDO::$errors[] = $e->getMessage();
+			PHPTreePDO::$errors[] = $e->getMessage();
 			return false;
 		}	 
 	}
@@ -268,7 +278,7 @@ class PTreePDO {
 			}
 		
 		}catch (PDOException $e) {
-			PTreePDO::$errors[] = $e->getMessage();
+			PHPTreePDO::$errors[] = $e->getMessage();
 			return false;
 		}	 
 	}
@@ -295,10 +305,9 @@ class PTreePDO {
 				}
 			 
 			}catch (PDOException $e) {
-				PTreePDO::$errors[] = $e->getMessage();
+				PHPTreePDO::$errors[] = $e->getMessage();
 				return false;
 			}
 	 }
 }
-
 ?>
