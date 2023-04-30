@@ -1,0 +1,22 @@
+{
+    "name": "phptree/pdo",
+    "description": "a php PDO database connection class with simple query builder .",
+    "keywords": ["phppdo","pdo","pdo-mysql","php mysql class","php pdo class","php database"],
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "PHPTree ( support )",
+            "email": "support@phptree.org"
+        }
+    ],
+    "minimum-stability": "dev",
+    "require": {
+        "php": ">=8.0.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "PHPTree\\DB\\": "src"
+        }
+    }
+}
