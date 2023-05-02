@@ -59,7 +59,7 @@ class PHPTreePDO {
 				$this->is_connected = true;
 				 
 		} catch (PDOException $e) {
-			PTreePDO::$errors[] = $e->getMessage();
+			PHPTreePDO::$errors[] = $e->getMessage();
 			return null;
 		}
 	}
